@@ -7,6 +7,7 @@ Concurrency via channels and go routines
 
 NOTES:
 Channels are a typed conduit through which you can send and receive values with the channel operator
+Channels are typed values that allow goroutines to synchronize and exchange information. ex: timerChan := make(chan time.Time)
 
 Concurrency: Programming as the composition of independently executing processes.
 Parallelism: Programming as the simultaneous execution of (possibly related) computations.
@@ -36,20 +37,21 @@ type Work struct {
 }
 
 //Perform some work looping over input channel
-func worker(i int, in <-chan *Work, out chan<- *Work) {
+func worker(i int, in chan *Work, out chan *Work) {
 	fmt.Printf("Start[%d]: %v\n", i,time.Now())
 	for w := range in {
 		w.z = i
 		time.Sleep(time.Duration(1) * time.Second)
 		out <- w
 	}
+	close(out)
 	fmt.Printf("End[%d]: %v\n",i,time.Now())
 }
 
 //Create workers and launch go routines
 func Run() {
 	in, out := make(chan *Work), make(chan *Work)
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 2; i++ {
 		go worker(i, in, out)
 	}
 	go sendLotsOfWork(in)
@@ -58,7 +60,7 @@ func Run() {
 
 //Assign work to channel to keep workers busy
 func sendLotsOfWork(in chan *Work) {
-	for i:=0; i< 200; i++ {
+	for i:=0; i< 20; i++ {
 		w1 := &Work{1*i,2*i,3*i}
 		in <- w1
 	}
@@ -68,13 +70,8 @@ func sendLotsOfWork(in chan *Work) {
 
 //Read the results
 func receiveLotsOfResults(out chan *Work) {
-	for {
-		o, ok := <- out
-		if ok == true {
-			fmt.Printf("x=>%d y=>%d z=>%d\n", o.x,o.y,o.z)
-		} else {
-			fmt.Println("Channel broke")
-		}
+	for o := range out {
+		fmt.Printf("x=>%d y=>%d z=>%d\n", o.x,o.y,o.z)
 	}
 }
 
