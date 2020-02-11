@@ -1,3 +1,28 @@
+/*
+https://talks.golang.org/2012/waza.slide#39
+
+Simple LoadBalancer between workers
+
+Concurrency via channels and go routines
+
+NOTES:
+Channels are a typed conduit through which you can send and receive values with the channel operator
+
+Concurrency: Programming as the composition of independently executing processes.
+Parallelism: Programming as the simultaneous execution of (possibly related) computations.
+
+Concurrency is about dealing with lots of things at once.
+Parallelism is about doing lots of things at once.
+
+Not the same, but related.
+Concurrency is about structure, parallelism is about execution.
+Concurrency provides a way to structure a solution to solve a problem that may (but not necessarily) be parallelizable.
+
+Concurrency plus communication(Channels)
+Concurrency is a way to structure a program by breaking it into pieces that can be executed independently.
+Communication is the means to coordinate the independent executions.
+*/
+
 package main
 
 import (
@@ -5,10 +30,12 @@ import (
 	"time"
 )
 
+//Work information
 type Work struct {
 	x, y, z int
 }
 
+//Perform some work looping over input channel
 func worker(i int, in <-chan *Work, out chan<- *Work) {
 	fmt.Printf("Start[%d]: %v\n", i,time.Now())
 	for w := range in {
@@ -19,6 +46,7 @@ func worker(i int, in <-chan *Work, out chan<- *Work) {
 	fmt.Printf("End[%d]: %v\n",i,time.Now())
 }
 
+//Create workers and launch go routines
 func Run() {
 	in, out := make(chan *Work), make(chan *Work)
 	for i := 0; i < 20; i++ {
@@ -28,6 +56,7 @@ func Run() {
 	receiveLotsOfResults(out)
 }
 
+//Assign work to channel to keep workers busy
 func sendLotsOfWork(in chan *Work) {
 	for i:=0; i< 200; i++ {
 		w1 := &Work{1*i,2*i,3*i}
@@ -37,6 +66,7 @@ func sendLotsOfWork(in chan *Work) {
 	return
 }
 
+//Read the results
 func receiveLotsOfResults(out chan *Work) {
 	for {
 		o, ok := <- out
